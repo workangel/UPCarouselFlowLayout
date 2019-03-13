@@ -110,7 +110,8 @@ open class UPCarouselFlowLayout: UICollectionViewFlowLayout {
     }
     
     override open func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint, withScrollingVelocity velocity: CGPoint) -> CGPoint {
-        guard let collectionView = collectionView , !collectionView.isPagingEnabled,
+        guard let collectionView = collectionView,
+        self.shouldCentreOrigin(), !collectionView.isPagingEnabled,
             let layoutAttributes = self.layoutAttributesForElements(in: collectionView.bounds)
             else { return super.targetContentOffset(forProposedContentOffset: proposedContentOffset) }
         
@@ -134,5 +135,35 @@ open class UPCarouselFlowLayout: UICollectionViewFlowLayout {
     
     override open var flipsHorizontallyInOppositeLayoutDirection: Bool {
         return true
+    }
+    
+    /* Snapping to a central cell does not always allow the first or last cell to be fully visible
+     depending on its size / size of the screen.
+     This allows the user to scroll past this snap */
+    private func shouldCentreOrigin() -> Bool {
+        
+        guard let collectionView = collectionView else { return true }
+        
+        let isHorizontal = (self.scrollDirection == .horizontal)
+        let maxContentSize = isHorizontal ? collectionView.contentSize.width : collectionView.contentSize.height
+        let side = isHorizontal ? collectionView.frame.size.width : collectionView.frame.size.height
+        let offset = isHorizontal ? collectionView.contentOffset.x : collectionView.contentOffset.y
+        
+        var dragDistance: CGFloat = 10
+        
+        
+        switch self.spacingMode {
+        case .fixed(let spacing):
+            dragDistance = spacing
+        case .overlap(let visibleOffset):
+            dragDistance = visibleOffset
+        }
+        
+        if offset >= (maxContentSize - side - dragDistance)
+            || offset <= dragDistance {
+            return false
+        } else {
+            return true
+        }
     }
 }
